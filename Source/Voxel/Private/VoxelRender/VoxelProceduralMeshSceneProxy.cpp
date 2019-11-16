@@ -3,9 +3,19 @@
 #include "VoxelRender/VoxelProceduralMeshSceneProxy.h"
 #include "VoxelRender/VoxelProceduralMeshComponent.h"
 #include "VoxelGlobals.h"
+#include "VertexFactory.h"
 
+#include "PrimitiveSceneProxy.h"
 #include "Materials/Material.h"
+#include "SceneManagement.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "RenderResource.h"
+#include "PhysicsEngine/PhysicsSettings.h"
+#include "StaticMeshResources.h"
+#include "EngineGlobals.h"
+#include "Containers/ResourceArray.h"
+#include "RayTracingDefinitions.h"
+#include "RayTracingInstance.h"
 #if ENABLE_TESSELLATION
 #include "TessellationRendering.h"
 #endif
@@ -127,6 +137,38 @@ FVoxelProceduralMeshSceneProxy::FVoxelProceduralMeshSceneProxy(UVoxelProceduralM
 
 			// Save ref to new section
 			Sections[SectionIdx] = NewSection;
+
+#if RHI_RAYTRACING
+			if (IsRayTracingEnabled())
+			{
+				ENQUEUE_RENDER_COMMAND(InitVoxelProceduralMeshRaytracingGeometry)
+					([this, NewSection](FRHICommandListImmediate& RHICmdList)
+						{
+							FRayTracingGeometryInitializer Initializer;
+							Initializer.PositionVertexBuffer = nullptr;
+							Initializer.IndexBuffer = nullptr;
+							Initializer.BaseVertexIndex = 0;
+							Initializer.VertexBufferStride = 12;
+							Initializer.VertexBufferByteOffset = 0;
+							Initializer.TotalPrimitiveCount = 0;
+							Initializer.VertexBufferElementType = VET_Float3;
+							Initializer.GeometryType = RTGT_Triangles;
+							Initializer.bFastBuild = true;
+							Initializer.bAllowUpdate = false;
+							NewSection->RayTracingGeometry.SetInitializer(Initializer);
+							NewSection->RayTracingGeometry.InitResource();
+
+							NewSection->RayTracingGeometry.Initializer.PositionVertexBuffer = NewSection->VertexBuffers.PositionVertexBuffer.VertexBufferRHI;
+							NewSection->RayTracingGeometry.Initializer.IndexBuffer = NewSection->IndexBuffer.IndexBufferRHI;
+							
+							NewSection->RayTracingGeometry.Initializer.TotalPrimitiveCount = NewSection->IndexBuffer.GetNumIndices() / 3;
+
+							//#dxr_todo: add support for segments?
+
+							NewSection->RayTracingGeometry.UpdateRHI();
+						});
+			}
+#endif
 		}
 	}
 }
@@ -138,6 +180,12 @@ FVoxelProceduralMeshSceneProxy::~FVoxelProceduralMeshSceneProxy()
 		if (Section != nullptr)
 		{
 			Section->ReleaseResources();
+#if RHI_RAYTRACING
+			if (IsRayTracingEnabled())
+			{
+				Section->RayTracingGeometry.ReleaseResource();
+			}
+#endif
 			delete Section;
 		}
 	}
@@ -180,7 +228,8 @@ void FVoxelProceduralMeshSceneProxy::GetDynamicMeshElements(const TArray<const F
 					BatchElement.PrimitiveUniformBufferResource = &GetUniformBuffer();
 #else
 					FDynamicPrimitiveUniformBuffer& DynamicPrimitiveUniformBuffer = Collector.AllocateOneFrameResource<FDynamicPrimitiveUniformBuffer>();
-					DynamicPrimitiveUniformBuffer.Set(GetLocalToWorld(), GetLocalToWorld(), GetBounds(), GetLocalBounds(), true, false, UseEditorDepthTest());
+					// DynamicPrimitiveUniformBuffer.Set(GetLocalToWorld(), GetLocalToWorld(), GetBounds(), GetLocalBounds(), true, false, false);
+					DynamicPrimitiveUniformBuffer.Set(GetLocalToWorld(), GetLocalToWorld(), GetBounds(), GetLocalBounds(), true, false,false,false);
 					BatchElement.PrimitiveUniformBufferResource = &DynamicPrimitiveUniformBuffer.UniformBuffer;
 #endif
 					BatchElement.FirstIndex = 0;
@@ -213,7 +262,7 @@ void FVoxelProceduralMeshSceneProxy::GetDynamicMeshElements(const TArray<const F
 			if (ViewFamily.EngineShowFlags.Collision && IsCollisionEnabled() && BodySetup->GetCollisionTraceFlag() != ECollisionTraceFlag::CTF_UseComplexAsSimple)
 			{
 				FTransform GeomTransform(GetLocalToWorld());
-				BodySetup->AggGeom.GetAggGeom(GeomTransform, GetSelectionColor(FColor(157, 149, 223, 255), IsSelected(), IsHovered()).ToFColor(true), NULL, false, false, UseEditorDepthTest(), ViewIndex, Collector);
+				BodySetup->AggGeom.GetAggGeom(GeomTransform, GetSelectionColor(FColor(157, 149, 223, 255), IsSelected(), IsHovered()).ToFColor(true), NULL, false, false, false, ViewIndex, Collector);
 			}
 
 			// Render bounds
@@ -232,6 +281,7 @@ FPrimitiveViewRelevance FVoxelProceduralMeshSceneProxy::GetViewRelevance(const F
 	Result.bRenderInMainPass = ShouldRenderInMainPass();
 	Result.bUsesLightingChannels = GetLightingChannelMask() != GetDefaultLightingChannelMask();
 	Result.bRenderCustomDepth = ShouldRenderCustomDepth();
+	
 #if ENGINE_MINOR_VERSION >= 22
 	Result.bTranslucentSelfShadow = bCastVolumetricTranslucentShadow;
 #endif
@@ -256,3 +306,63 @@ uint32 FVoxelProceduralMeshSceneProxy::GetAllocatedSize() const
 {
 	return FPrimitiveSceneProxy::GetAllocatedSize();
 }
+
+void FVoxelProceduralMeshSceneProxy::GetDynamicRayTracingInstances(FRayTracingMaterialGatheringContext& Context, TArray<FRayTracingInstance>& OutRayTracingInstances)
+{
+	for (const FVoxelProcMeshProxySection* Section : Sections)
+	
+	{
+		
+		if (Section != nullptr && Section->bSectionVisible)
+		{
+			FMaterialRenderProxy* MaterialProxy = Section->Material->GetRenderProxy();
+
+			if (Section->RayTracingGeometry.RayTracingGeometryRHI.IsValid())
+			{
+				check(Section->RayTracingGeometry.Initializer.PositionVertexBuffer.IsValid());
+				check(Section->RayTracingGeometry.Initializer.IndexBuffer.IsValid());
+
+				FRayTracingInstance RayTracingInstance;
+				RayTracingInstance.Geometry = &Section->RayTracingGeometry;
+				RayTracingInstance.InstanceTransforms.Add(GetLocalToWorld());
+
+				uint32 SectionIdx = 0;
+				FMeshBatch MeshBatch;
+
+				MeshBatch.VertexFactory = &Section->VertexFactory;
+				MeshBatch.SegmentIndex = 0;
+				MeshBatch.MaterialRenderProxy = Section->Material->GetRenderProxy();
+				MeshBatch.ReverseCulling = IsLocalToWorldDeterminantNegative();
+				MeshBatch.Type = PT_TriangleList;
+				MeshBatch.DepthPriorityGroup = SDPG_World;
+				MeshBatch.bCanApplyViewModeOverrides = false;
+
+				FMeshBatchElement& BatchElement = MeshBatch.Elements[0];
+				BatchElement.IndexBuffer = &Section->IndexBuffer;
+
+				bool bHasPrecomputedVolumetricLightmap;
+				FMatrix PreviousLocalToWorld;
+				int32 SingleCaptureIndex;
+				bool bOutputVelocity;
+				GetScene().GetPrimitiveUniformShaderParameters_RenderThread(GetPrimitiveSceneInfo(), bHasPrecomputedVolumetricLightmap, PreviousLocalToWorld, SingleCaptureIndex, bOutputVelocity);
+
+				FDynamicPrimitiveUniformBuffer& DynamicPrimitiveUniformBuffer = Context.RayTracingMeshResourceCollector.AllocateOneFrameResource<FDynamicPrimitiveUniformBuffer>();
+				DynamicPrimitiveUniformBuffer.Set(GetLocalToWorld(), PreviousLocalToWorld, GetBounds(), GetLocalBounds(), true, bHasPrecomputedVolumetricLightmap, DrawsVelocity(), bOutputVelocity);
+				BatchElement.PrimitiveUniformBufferResource = &DynamicPrimitiveUniformBuffer.UniformBuffer;
+
+				BatchElement.FirstIndex = 0;
+				BatchElement.NumPrimitives = Section->IndexBuffer.GetNumIndices() / 3;
+				BatchElement.MinVertexIndex = 0;
+				BatchElement.MaxVertexIndex = Section->VertexBuffers.PositionVertexBuffer.GetNumVertices() - 1;
+
+				RayTracingInstance.Materials.Add(MeshBatch);
+
+				RayTracingInstance.BuildInstanceMaskAndFlags();
+				OutRayTracingInstances.Add(RayTracingInstance);
+			}
+		}
+	}
+}
+
+
+

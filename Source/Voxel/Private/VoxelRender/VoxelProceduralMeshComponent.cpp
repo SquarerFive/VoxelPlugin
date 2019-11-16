@@ -56,9 +56,10 @@ UVoxelProceduralMeshComponent::UVoxelProceduralMeshComponent()
 	bAllowReregistration = false; // Slows down the editor
 	bCastShadowAsTwoSided = true;
 	bHasCustomNavigableGeometry = EHasCustomNavigableGeometry::EvenIfNotCollidable;
-
+	
 	// Fix for details crash
 	BodyInstance.SetMassOverride(100, true);
+	
 }
 
 UVoxelProceduralMeshComponent::~UVoxelProceduralMeshComponent()

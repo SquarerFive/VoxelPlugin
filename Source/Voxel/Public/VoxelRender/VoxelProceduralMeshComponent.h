@@ -41,6 +41,7 @@ struct FVoxelProcMeshSection
 	bool bEnableNavmesh = false;
 	bool bSectionVisible = true;
 
+
 	FVoxelProcMeshSection() = default;
 	~FVoxelProcMeshSection()
 	{
@@ -190,6 +191,7 @@ protected:
 		UClass*& ReturnClass,
 		void(*RegisterNativeFunc)(),
 		uint32 InSize,
+		uint32 InAlignment,
 		EClassFlags InClassFlags,
 		EClassCastFlags InClassCastFlags,
 		const TCHAR* InConfigName,
@@ -198,21 +200,42 @@ protected:
 		UClass::ClassAddReferencedObjectsType InClassAddReferencedObjects,
 		UClass::StaticClassFunctionType InSuperClassFn,
 		UClass::StaticClassFunctionType InWithinClassFn)
+		/*
 	{
 		::GetPrivateStaticClassBody(
-			PackageName, 
-			Name, 
-			ReturnClass, 
-			RegisterNativeFunc, 
-			InSize, 
-			InClassFlags, 
-			InClassCastFlags, 
-			InConfigName, 
-			InClassConstructor, 
-			InClassVTableHelperCtorCaller, 
-			InClassAddReferencedObjects, 
+			PackageName,
+			Name,
+			ReturnClass,
+			RegisterNativeFunc,
+			InSize,
+			InClassFlags,
+			InClassCastFlags,
+			InConfigName,
+			InClassConstructor,
+			InClassVTableHelperCtorCaller,
+			InClassAddReferencedObjects,
 			FCString::Stristr(FCommandLine::Get(), TEXT("-voxelfoliageedmodehack")) ? &UStaticMeshComponent::StaticClass : InSuperClassFn,
 			InWithinClassFn);
+	}
+	*/
+	{
+		::GetPrivateStaticClassBody(
+			PackageName,
+			Name,
+			ReturnClass,
+			RegisterNativeFunc,
+			InSize,
+			InAlignment,
+			InClassFlags,
+			InClassCastFlags,
+			InConfigName,
+			InClassConstructor,
+			InClassVTableHelperCtorCaller,
+			InClassAddReferencedObjects,
+			InSuperClassFn,
+			InWithinClassFn
+
+		);
 	}
 #endif
 };

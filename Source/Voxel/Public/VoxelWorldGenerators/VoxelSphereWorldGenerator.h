@@ -48,7 +48,7 @@ public:
 	}
 	//~ End FVoxelWorldGeneratorInstance Interface
 
-private:
+public:
 	const float Radius;
 	const FVoxelMaterial Material;
 	const bool bInverseOutsideInside;
