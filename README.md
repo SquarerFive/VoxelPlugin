@@ -1,6 +1,6 @@
 # voxel plugin
 
-**Introduction**
+## Introduction
 This is a forked repository of VoxelPlugin which is focused on mainly improving the FREE version. I'll call it "Enhanced Free Version".
 
 Current Changes:
