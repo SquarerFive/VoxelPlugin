@@ -10,7 +10,7 @@ Current Changes:
 TODO:
 * Foliage System (HISM, raytraced above camera to voxel world?)
 * Faster world generation
-
+![Foliage WIP](https://media.discordapp.net/attachments/563601152885653533/645203402787127321/unknown.png)
 -----------
 # Original Plugin Description:
 
