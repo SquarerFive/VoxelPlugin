@@ -1,5 +1,19 @@
 # voxel plugin
 
+## Introduction
+This is a forked repository of VoxelPlugin which is focused on mainly improving the FREE version. I'll call it "Enhanced Free Version".
+
+Current Changes:
+* Updated plugin to 4.23 and 4.24
+* Implemented Raytracing.
+
+TODO:
+* Foliage System (HISM, raytraced above camera to voxel world?)
+* Faster world generation
+
+-----------
+# Original Plugin Description:
+
 **voxel plugin** allows to create fully volumetric, entirely destructible, infinite worlds in **Unreal Engine**.
 It is compatible with 4.21 and 4.22.
 
