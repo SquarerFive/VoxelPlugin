@@ -11,6 +11,17 @@ TODO:
 * Foliage System (HISM, raytraced above camera to voxel world?)
 * Faster world generation
 ![Foliage WIP](https://media.discordapp.net/attachments/563601152885653533/645203402787127321/unknown.png)
+
+## Ideas
+* Faster noise generation (SIMD? or do it on the GPGPU?).
+* Editor foliage/mesh painting (shouldn't be hard to do).
+* Terrain heightmap blending (like in Astroneer).
+* Fluid/smoke simulation.
+
+Any questions?
+
+Contact me on Discord: SquarerFive#1337
+
 -----------
 # Original Plugin Description:
 
