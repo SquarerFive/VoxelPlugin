@@ -18,6 +18,9 @@ TODO:
 * Terrain heightmap blending (like in Astroneer).
 * Fluid/smoke simulation.
 
+## Why?
+I am using this plugin for my High School major project. As I like challenge, I've decided to use the free version of VoxelPlugin.
+
 Any questions?
 
 Contact me on Discord: SquarerFive#1337
