@@ -4,8 +4,8 @@
 #include "VoxelRender/VoxelProceduralMeshComponent.h"
 #include "VoxelGlobals.h"
 
-#include "Physics/IPhysXCooking.h"
-#include "Physics/IPhysXCookingModule.h"
+#include "PhysXCooking/Public/PhysXCooking.h"
+#include "Runtime/PhysicsCore/Public/IPhysXCookingModule.h"
 #include "Async/Async.h"
 #include "PhysicsPublic.h"
 
@@ -73,7 +73,13 @@ bool FVoxelAsyncPhysicsCooker::Cook()
 	if (CookInfo.bCookTriMesh && !CookInfo.bTriMeshError)
 	{
 		OutTriangleMeshes.AddZeroed();
-		bool bError = !PhysXCooking->CreateTriMesh(
+
+		if (!PhysXCooking) { return false; }
+		if (!(OutTriangleMeshes.Num() > 0)) { return false; }
+		if (!(CookInfo.TriangleMeshDesc.Vertices.Num() > 0)) { return false; }
+		if (!(CookInfo.TriangleMeshDesc.Indices.Num() > 0)) { return false; }
+		if (!(CookInfo.TriangleMeshDesc.MaterialIndices.Num() > 0)) { return false; }
+ 		bool bError = !PhysXCooking->CreateTriMesh(
 			PhysXFormat, 
 			CookInfo.TriMeshCookFlags, 
 			CookInfo.TriangleMeshDesc.Vertices, 

@@ -2,7 +2,7 @@
 
 using System.IO;
 using UnrealBuildTool;
-
+using System;
 public class Voxel : ModuleRules
 {
     public Voxel(ReadOnlyTargetRules Target) : base(Target)
@@ -23,6 +23,11 @@ public class Voxel : ModuleRules
         PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Public"));
         PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 
+        string engine_path = Path.GetFullPath(Target.RelativeEnginePath);
+        string MyShaderDir = engine_path + "Shaders\\Shared\\";
+        Console.WriteLine(MyShaderDir);
+        PrivateIncludePaths.Add(MyShaderDir);
+        PublicIncludePaths.Add(MyShaderDir);
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
@@ -37,6 +42,11 @@ public class Voxel : ModuleRules
                 "SlateCore",
                 "Landscape",
                 "HTTP"
+                ,"PhysicsCore"
+                ,"PhysXCooking"
+                ,"RHI"
+                , "PhysX"
+               
             }
         );
 
@@ -45,6 +55,7 @@ public class Voxel : ModuleRules
             {
                 "nvTessLib",
                 "Steamworks"
+                , "Core"
             }
         );
 

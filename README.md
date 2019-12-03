@@ -1,33 +1,5 @@
 # voxel plugin
 
-## Introduction
-This is a forked repository of VoxelPlugin which is focused on mainly improving the FREE version.
-
-Current Changes:
-* Updated plugin to 4.23 and 4.24
-* Implemented Raytracing.
-
-TODO:
-* Foliage System (HISM, raytraced above camera to voxel world?)
-* Faster world generation
-![Foliage WIP](https://media.discordapp.net/attachments/563601152885653533/645203402787127321/unknown.png)
-
-## Ideas
-* Faster noise generation (SIMD? or do it on the GPGPU?).
-* Editor foliage/mesh painting (shouldn't be hard to do).
-* Terrain heightmap blending (like in Astroneer).
-* Fluid/smoke simulation.
-
-## Why?
-I am using this plugin for my High School major project. As I like challenge, I've decided to use the free version of VoxelPlugin.
-
-Any questions?
-
-Contact me on Discord: SquarerFive#1337
-
------------
-# Original Plugin Description:
-
 **voxel plugin** allows to create fully volumetric, entirely destructible, infinite worlds in **Unreal Engine**.
 It is compatible with 4.21 and 4.22.
 

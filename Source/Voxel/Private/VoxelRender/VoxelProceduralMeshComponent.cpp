@@ -7,12 +7,23 @@
 #include "VoxelGlobals.h"
 #include "IVoxelPool.h"
 
-#include "PhysicsEngine/PhysicsSettings.h"
+
 #include "PhysicsEngine/BodySetup.h"
+#include "PhysicsEngine/BodyInstance.h"
+#include "PhysicsPublic.h"
+#include "IPhysXCooking.h"
+#include "PhysXCookHelper.h"
 #include "AI/NavigationSystemHelpers.h"
 #include "AI/NavigationSystemBase.h"
 #include "Async/Async.h"
 #include "DrawDebugHelpers.h"
+
+
+#if WITH_PHYSX
+#include "PhysXPublic.h"
+#include "Runtime/Engine/Private/PhysicsEngine/PhysXSupport.h"
+
+#endif // WITH_PHYSX
 
 #define LOCTEXT_NAMESPACE "Voxel"
 
@@ -56,9 +67,10 @@ UVoxelProceduralMeshComponent::UVoxelProceduralMeshComponent()
 	bAllowReregistration = false; // Slows down the editor
 	bCastShadowAsTwoSided = true;
 	bHasCustomNavigableGeometry = EHasCustomNavigableGeometry::EvenIfNotCollidable;
-
+	
 	// Fix for details crash
 	BodyInstance.SetMassOverride(100, true);
+	
 }
 
 UVoxelProceduralMeshComponent::~UVoxelProceduralMeshComponent()
@@ -441,9 +453,10 @@ void UVoxelProceduralMeshComponent::FinishCollisionUpdate()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
+#if WITH_PHYSX
 void UVoxelProceduralMeshComponent::AsyncPhysicsCookerCallback(uint64 CookerId)
 {
+
 	SCOPE_CYCLE_COUNTER(STAT_UVoxelProceduralMeshComponent_AsyncPhysicsCookerCallback);
 
 	check(IsInGameThread());
@@ -465,11 +478,17 @@ void UVoxelProceduralMeshComponent::AsyncPhysicsCookerCallback(uint64 CookerId)
 		UE_LOG(LogVoxel, Error, TEXT("Invalid BodySetupBeingCooked!"));
 		return;
 	}
+	
+	
+	
+	// BodySetupBeingCooked->FinishCreatingPhysicsMeshes(AsyncCooker->OutNonMirroredConvexMeshes, AsyncCooker->OutMirroredConvexMeshes, AsyncCooker->OutTriangleMeshes);
+	FinishCreatingPhysicsMeshes(BodySetupBeingCooked, AsyncCooker->OutNonMirroredConvexMeshes, AsyncCooker->OutMirroredConvexMeshes, AsyncCooker->OutTriangleMeshes);
 
-	BodySetupBeingCooked->FinishCreatingPhysicsMeshes(AsyncCooker->OutNonMirroredConvexMeshes, AsyncCooker->OutMirroredConvexMeshes, AsyncCooker->OutTriangleMeshes);
+
+	
 	FinishCollisionUpdate();
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -488,5 +507,60 @@ UBodySetup* UVoxelProceduralMeshComponent::CreateBodySetupHelper()
 	NewBodySetup->bGenerateMirroredCollision = false;
 	return NewBodySetup;
 }
+
+void UVoxelProceduralMeshComponent::FinishCreatingPhysicsMeshes(UBodySetup* BodySetup, const TArray<PxConvexMesh*>& ConvexMeshes, const TArray<PxConvexMesh*>& ConvexMeshesNegX, const TArray<PxTriangleMesh*>& CookedTriMeshes)
+{
+	if (!BodySetup)return;
+	check(IsInGameThread());
+	BodySetup->ClearPhysicsMeshes();
+	
+	const FString FullName = BodySetup->GetFullName();
+	if (BodySetup->GetCollisionTraceFlag() != CTF_UseComplexAsSimple)
+	{
+		ensure(!BodySetup->bGenerateNonMirroredCollision || ConvexMeshes.Num() == 0 || ConvexMeshes.Num() == BodySetup->AggGeom.ConvexElems.Num());
+		ensure(!BodySetup->bGenerateMirroredCollision || ConvexMeshesNegX.Num() == 0 || ConvexMeshesNegX.Num() == BodySetup->AggGeom.ConvexElems.Num());
+
+		//If the cooked data no longer has convex meshes, make sure to empty AggGeom.ConvexElems - otherwise we leave NULLS which cause issues, and we also read past the end of CookedDataReader.ConvexMeshes
+		if ((BodySetup->bGenerateNonMirroredCollision && ConvexMeshes.Num() == 0) || (BodySetup->bGenerateMirroredCollision && ConvexMeshesNegX.Num() == 0))
+		{
+			BodySetup->AggGeom.ConvexElems.Empty();
+		}
+
+		for (int32 ElementIndex = 0; ElementIndex < BodySetup->AggGeom.ConvexElems.Num(); ElementIndex++)
+		{
+			FKConvexElem& ConvexElem = BodySetup->AggGeom.ConvexElems[ElementIndex];
+
+			if (BodySetup->bGenerateNonMirroredCollision)
+			{
+				ConvexElem.SetConvexMesh(ConvexMeshes[ElementIndex]);
+				FPhysxSharedData::Get().Add(ConvexElem.GetConvexMesh(), FullName);
+			}
+
+			if (BodySetup->bGenerateMirroredCollision)
+			{
+				ConvexElem.SetMirroredConvexMesh(ConvexMeshesNegX[ElementIndex]);
+				FPhysxSharedData::Get().Add(ConvexElem.GetMirroredConvexMesh(), FullName);
+			}
+		}
+	}
+
+	for (PxTriangleMesh* TriMesh : CookedTriMeshes)
+	{
+		if (TriMesh)
+		{
+			BodySetup->TriMeshes.Add(TriMesh);
+			FPhysxSharedData::Get().Add(TriMesh, FullName);
+		}
+	}
+
+	// Clear the cooked data
+	if (!GIsEditor && !BodySetup->bSharedCookedData)
+	{
+		BodySetup->CookedFormatData.FlushData();
+	}
+
+	BodySetup->bCreatedPhysicsMeshes = true;
+}
+
 
 #undef LOCTEXT_NAMESPACE
