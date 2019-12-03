@@ -41,6 +41,7 @@ struct FVoxelProcMeshSection
 	bool bEnableNavmesh = false;
 	bool bSectionVisible = true;
 
+
 	FVoxelProcMeshSection() = default;
 	~FVoxelProcMeshSection()
 	{
@@ -145,6 +146,8 @@ public:
 	FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const final;
 	void PostLoad() final;
 	//~ End UPrimitiveComponent Interface.
+
+	void FinishCreatingPhysicsMeshes(UBodySetup * BodySetup, const TArray<physx::PxConvexMesh*>& ConvexMeshes, const TArray<physx::PxConvexMesh*>& ConvexMeshesNegX, const TArray<physx::PxTriangleMesh*>& TriMeshes);
 	
 private:
 	// Update LocalBounds member from the local box of each section
@@ -168,9 +171,10 @@ private:
 	UPROPERTY()
 	TArray<FVoxelProcMeshSection> ProcMeshSections;
 
+public:
 	UPROPERTY()
 	UBodySetup* BodySetupBeingCooked;
-
+private:
 	FVoxelAsyncPhysicsCooker* AsyncCooker = nullptr;
 
 	TArray<FKConvexElem> CollisionConvexElems;
@@ -190,6 +194,7 @@ protected:
 		UClass*& ReturnClass,
 		void(*RegisterNativeFunc)(),
 		uint32 InSize,
+		uint32 InAlignment,
 		EClassFlags InClassFlags,
 		EClassCastFlags InClassCastFlags,
 		const TCHAR* InConfigName,
@@ -198,21 +203,43 @@ protected:
 		UClass::ClassAddReferencedObjectsType InClassAddReferencedObjects,
 		UClass::StaticClassFunctionType InSuperClassFn,
 		UClass::StaticClassFunctionType InWithinClassFn)
+		/*
 	{
 		::GetPrivateStaticClassBody(
-			PackageName, 
-			Name, 
-			ReturnClass, 
-			RegisterNativeFunc, 
-			InSize, 
-			InClassFlags, 
-			InClassCastFlags, 
-			InConfigName, 
-			InClassConstructor, 
-			InClassVTableHelperCtorCaller, 
-			InClassAddReferencedObjects, 
+			PackageName,
+			Name,
+			ReturnClass,
+			RegisterNativeFunc,
+			InSize,
+			InClassFlags,
+			InClassCastFlags,
+			InConfigName,
+			InClassConstructor,
+			InClassVTableHelperCtorCaller,
+			InClassAddReferencedObjects,
 			FCString::Stristr(FCommandLine::Get(), TEXT("-voxelfoliageedmodehack")) ? &UStaticMeshComponent::StaticClass : InSuperClassFn,
 			InWithinClassFn);
+	}
+	*/
+	{
+		::GetPrivateStaticClassBody(
+			PackageName,
+			Name,
+			ReturnClass,
+			RegisterNativeFunc,
+			InSize,
+			InAlignment,
+			InClassFlags,
+			InClassCastFlags,
+			InConfigName,
+			InClassConstructor,
+			InClassVTableHelperCtorCaller,
+			InClassAddReferencedObjects,
+		//	&UStaticMeshComponent::StaticClass,
+			InSuperClassFn,
+			InWithinClassFn
+
+		);
 	}
 #endif
 };

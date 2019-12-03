@@ -6,6 +6,8 @@
 #include "StaticMeshResources.h"
 #include "VoxelRawStaticIndexBuffer.h"
 #include "PrimitiveSceneProxy.h"
+#include "RayTracingInstance.h"
+
 
 class UMaterialInterface;
 class UVoxelProceduralMeshComponent;
@@ -27,6 +29,10 @@ public:
 	bool bSectionVisible = true;
 	/** For tessellation */
 	bool bRequiresAdjacencyInformation = false;
+
+#if RHI_RAYTRACING
+	FRayTracingGeometry RayTracingGeometry;
+#endif
 
 	FVoxelProcMeshProxySection(ERHIFeatureLevel::Type InFeatureLevel)
 		: VertexFactory(InFeatureLevel, "FVoxelProcMeshProxySection")
@@ -55,8 +61,16 @@ public:
 		return reinterpret_cast<size_t>(&UniquePointer);
 	}
 
+#if RHI_RAYTRACING
+	virtual bool IsRayTracingRelevant() const override { return true; }
+
+	virtual void GetDynamicRayTracingInstances(FRayTracingMaterialGatheringContext& Context, TArray<FRayTracingInstance>& OutRayTracingInstances) override final;
+#endif
+
 private:
 	TArray<FVoxelProcMeshProxySection*> Sections;
+
+	
 	UBodySetup* const BodySetup;
 	FMaterialRelevance const MaterialRelevance;
 };

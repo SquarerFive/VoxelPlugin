@@ -31,7 +31,7 @@ public:
 	{
 		if (OutValue)
 		{
-			*OutValue = Z >= 0 ? FVoxelValue::Empty : FVoxelValue::Full;
+			*OutValue = Z>= 0 ? FVoxelValue::Empty : FVoxelValue::Full;
 		}
 		if (OutMaterial)
 		{
@@ -40,7 +40,8 @@ public:
 	}
 	EVoxelEmptyState IsEmpty(const FIntBox& Bounds, int32 LOD) const final
 	{
-		return (Bounds.Max.Z) <= 0 ? EVoxelEmptyState::AllFull : (0 <= Bounds.Min.Z) ? EVoxelEmptyState::AllEmpty : EVoxelEmptyState::Unknown;
+		
+		return Bounds.Max.IsZero()? EVoxelEmptyState::AllFull : Bounds.Min.IsZero() ? EVoxelEmptyState::AllEmpty : EVoxelEmptyState::Unknown;//(Bounds.Max.Z) <= 0 ? EVoxelEmptyState::AllFull : (0 <= Bounds.Min.Z) ? EVoxelEmptyState::AllEmpty : EVoxelEmptyState::Unknown;
 	}
 	//~ End FVoxelWorldGeneratorInstance Interface
 };
