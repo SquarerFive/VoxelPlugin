@@ -6,6 +6,8 @@ Current Changes:
 * Updated plugin to 4.23 and 4.24
 * Implemented Raytracing.
 
+NOTE: This is not backwards compatible. I have not tested this on a packaged project.
+
 TODO:
 * Foliage System (HISM, raytraced above camera to voxel world?)
 * Faster world generation
