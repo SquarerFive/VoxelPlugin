@@ -21,10 +21,6 @@ TODO:
 ## Why?
 I am using this plugin for my High School major project. As I like challenge, I've decided to use the free version of VoxelPlugin.
 
-Any questions?
-
-Contact me on Discord: SquarerFive#1337
-
 -----------
 # Original Plugin Description:
 
