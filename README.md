@@ -1,16 +1,25 @@
 # voxel plugin
 
 ## Introduction
-This is a forked repository of VoxelPlugin which is focused on mainly improving the FREE version. I'll call it "Enhanced Free Version".
+This is a forked repository of VoxelPlugin which is focused on mainly improving the FREE version (adding specific features I'll need for my project).
 
 Current Changes:
 * Updated plugin to 4.23 and 4.24
-* Implemented Raytracing.
+* Added Raytracing support.
 
 TODO:
 * Foliage System (HISM, raytraced above camera to voxel world?)
-* Faster world generation
+* Optimisation
 ![Foliage WIP](https://media.discordapp.net/attachments/563601152885653533/645203402787127321/unknown.png)
+
+## Ideas
+* Faster noise generation (SIMD? or do it on the GPGPU?).
+* Editor foliage/mesh painting (shouldn't be hard to do).
+* Terrain heightmap blending (like in Astroneer).
+* Fluid/smoke simulation.
+
+
+
 -----------
 # Original Plugin Description:
 
