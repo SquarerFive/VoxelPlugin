@@ -5,7 +5,7 @@ This is a forked repository of VoxelPlugin which is focused on mainly improving 
 
 Current Changes:
 * Updated plugin to 4.23 and 4.24
-* Implemented Raytracing.
+* Added Raytracing support.
 
 TODO:
 * Foliage System (HISM, raytraced above camera to voxel world?)
@@ -18,8 +18,7 @@ TODO:
 * Terrain heightmap blending (like in Astroneer).
 * Fluid/smoke simulation.
 
-## Why?
-I am using this plugin for my High School major project. As I like challenge, I've decided to use the free version of VoxelPlugin.
+
 
 -----------
 # Original Plugin Description:
